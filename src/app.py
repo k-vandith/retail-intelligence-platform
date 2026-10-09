@@ -32,19 +32,19 @@ def main() -> None:
     c3.metric("Low shelves", sum(1 for s in shelves if s["low_stock"]))
     fig = go.Figure(go.Bar(x=series["frame"], y=series["persons"], marker_color="#e2b15a"))
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#e7ecf3", height=280, title="Shoppers by frame")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     left, right = st.columns(2)
     with left:
         hm = px.imshow(heat, color_continuous_scale="YlOrRd", title="Relative dwell")
         hm.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color="#e7ecf3", height=360)
-        st.plotly_chart(hm, use_container_width=True)
+        st.plotly_chart(hm, width="stretch")
         if queue["alert"]:
             st.warning(queue["message"])
         else:
             st.success(queue["message"])
     with right:
         st.markdown("### Inventory")
-        st.dataframe(shelves, hide_index=True, use_container_width=True)
+        st.dataframe(shelves, hide_index=True, width="stretch")
         st.caption("Shelf levels are a demo inventory table, not a camera measurement.")
 
 if __name__ == "__main__":
