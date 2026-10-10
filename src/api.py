@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import csv
 import io
-import json
 import math
 import re
 from pathlib import Path
@@ -34,8 +33,6 @@ app = FastAPI(
     description="Aggregate-only retail floor demo. No facial recognition or image uploads.",
     version="1.0.0",
 )
-
-PAGE_ROUTES = ("/", "/traffic", "/queues", "/inventory", "/sessions")
 
 
 def _int_value(value: Any, *, maximum: int = 100_000) -> int:
@@ -164,7 +161,6 @@ def _parse_csv(body: bytes) -> tuple[list[dict[str, Any]], int]:
 
     latest_by_frame: dict[int, dict[str, Any]] = {}
     rows_read = 0
-    rows_valid = 0
     for record in reader:
         if not record or not any(str(value or "").strip() for value in record.values()):
             continue
@@ -194,7 +190,6 @@ def _parse_csv(body: bytes) -> tuple[list[dict[str, Any]], int]:
                 "est_wait_sec": queue * 45.0,
                 "alerts": [],
             }
-            rows_valid += 1
         except (ValueError, TypeError, OverflowError):
             continue
 
