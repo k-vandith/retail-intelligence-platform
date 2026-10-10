@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import uvicorn
 
@@ -13,7 +14,8 @@ def main() -> None:
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
         parser.error("--port must be between 1 and 65535")
-    uvicorn.run("src.api:app", host=args.host, port=args.port, reload=False)
+    root = Path(__file__).resolve().parent
+    uvicorn.run("src.api:app", host=args.host, port=args.port, reload=False, app_dir=str(root))
 
 
 if __name__ == "__main__":
