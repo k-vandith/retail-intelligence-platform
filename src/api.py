@@ -76,6 +76,15 @@ def _payload(
     if not frames:
         raise HTTPException(status_code=422, detail="No valid aggregate frame records were found")
 
+    # Keep legacy Python session keys stable while using canonical zone names in the web API.
+    for frame in frames:
+        zone_values = frame.get("zone_occupancy", {})
+        frame["zone_occupancy"] = {
+            str(key).removeprefix("zone_"): value
+            for key, value in zone_values.items()
+            if str(key).removeprefix("zone_") in ZONES
+        }
+
     queues = [int(frame["queue_length"]) for frame in frames]
     shoppers = [int(frame["people_count"]) for frame in frames]
     peak_queue = max(queues, default=0)
