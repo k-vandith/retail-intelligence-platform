@@ -26,59 +26,63 @@ Retail teams need simple indicators for shopper volume and queue pressure withou
 
 ## Architecture
 
-    HTML / CSS / Vanilla JavaScript
-                  |
-                  v
-         FastAPI local HTTP endpoints
-          /api/demo  /api/analyze/csv
-                  |
-                  v
-        Python aggregate analytics
-       session / queue / zones helpers
-                  |
-                  v
-              Counts only
+```text
+                HTML / CSS / Vanilla JavaScript
+                              |
+                              v
+                 FastAPI local HTTP endpoints
+                    /api/demo  /api/analyze/csv
+                              |
+                              v
+                  Python aggregate analytics
+                  session / queue / zones
+                              |
+                              v
+                         Counts only
 
-    No image upload, face storage, or live camera path
+          No image upload, face storage, or live camera path
+```
 
 ## Tech stack
 
 - Python 3.11+
 - FastAPI and Uvicorn
 - NumPy for deterministic synthetic samples
-- Pandas / Pillow retained for existing supporting data utilities
+- Pandas and Pillow for existing supporting data utilities
 - HTML, CSS, and vanilla JavaScript for the user interface
 - pytest, Ruff, Bandit, and pip-audit for validation
 
 ## Repository structure
 
-    retail-intelligence-platform/
-    ├── README.md
-    ├── run.py
-    ├── requirements.txt
-    ├── requirements-dev.txt
-    ├── web/
-    │   ├── index.html
-    │   ├── styles.css
-    │   ├── app.js
-    │   └── assets/
-    │       └── retail-intel-logo.svg
-    ├── src/
-    │   ├── api.py
-    │   ├── app.py
-    │   ├── retail.py
-    │   ├── retail_features.py
-    │   └── ui_theme.py
-    ├── scripts/
-    │   ├── setup_env.py
-    │   ├── setup.sh
-    │   ├── setup.ps1
-    │   └── generate_demo_data.py
-    └── tests/
-        ├── test_retail.py
-        ├── test_retail_features.py
-        ├── test_retail_api.py
-        └── test_ui_smoke.py
+```text
+retail-intelligence-platform/
+├── README.md
+├── run.py
+├── requirements.txt
+├── requirements-dev.txt
+├── web/
+│   ├── index.html
+│   ├── styles.css
+│   ├── app.js
+│   └── assets/
+│       └── retail-intel-logo.svg
+├── src/
+│   ├── api.py
+│   ├── app.py
+│   ├── retail.py
+│   ├── retail_features.py
+│   └── ui_theme.py
+├── scripts/
+│   ├── setup_env.py
+│   ├── setup.sh
+│   ├── setup.ps1
+│   └── generate_demo_data.py
+└── tests/
+    ├── test_retail.py
+    ├── test_retail_features.py
+    ├── test_retail_api.py
+    └── test_ui_smoke.py
+```
 
 ## Quick start
 
@@ -86,29 +90,35 @@ Requirements: Python 3.11 or newer.
 
 ### Windows PowerShell
 
-    git clone https://github.com/k-vandith/retail-intelligence-platform.git
-    cd retail-intelligence-platform
-    py -m venv .venv
-    .venv\Scripts\Activate.ps1
-    python -m pip install --upgrade pip
-    python -m pip install -r requirements.txt
-    python run.py
+```powershell
+git clone https://github.com/k-vandith/retail-intelligence-platform.git
+cd retail-intelligence-platform
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python run.py
+```
 
 ### macOS / Linux
 
-    git clone https://github.com/k-vandith/retail-intelligence-platform.git
-    cd retail-intelligence-platform
-    python3 -m venv .venv
-    source .venv/bin/activate
-    python -m pip install --upgrade pip
-    python -m pip install -r requirements.txt
-    python run.py
+```bash
+git clone https://github.com/k-vandith/retail-intelligence-platform.git
+cd retail-intelligence-platform
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python run.py
+```
 
 Open **http://127.0.0.1:8501**.
 
 The app binds to loopback by default and is designed for local development. Choose another port with:
 
-    python run.py --port 8502
+```bash
+python run.py --port 8502
+```
 
 The API documentation is at **http://127.0.0.1:8501/docs** and its OpenAPI schema at **http://127.0.0.1:8501/openapi.json**.
 
@@ -116,7 +126,9 @@ The API documentation is at **http://127.0.0.1:8501/docs** and its OpenAPI schem
 
 The repository also includes a cross-platform environment helper:
 
-    python scripts/setup_env.py
+```bash
+python scripts/setup_env.py
+```
 
 Activate the environment it creates, then start the app with **python run.py**. The helper installs runtime dependencies; use **requirements-dev.txt** when developing or running the full test suite.
 
@@ -161,10 +173,12 @@ Optional columns:
 
 Example:
 
-    frame,people_count,entries,exits,queue_length,zone_entrance,zone_aisle,zone_checkout
-    0,4,1,0,2,1,2,1
-    1,6,2,0,4,2,3,1
-    2,8,1,1,6,2,4,2
+```csv
+frame,people_count,entries,exits,queue_length,zone_entrance,zone_aisle,zone_checkout
+0,4,1,0,2,1,2,1
+1,6,2,0,4,2,3,1
+2,8,1,1,6,2,4,2
+```
 
 Column names are normalized case-insensitively. Counts must be non-negative whole numbers. Invalid rows are skipped; duplicate frame identifiers keep the last valid record, and valid rows are sorted by frame ID. At least one valid record must remain. The upload limit is **5 MB** and **50,000 non-empty records**.
 
@@ -189,9 +203,11 @@ All endpoints run on the same local origin as the interface.
 
 CSV request example:
 
-    curl -X POST "http://127.0.0.1:8501/api/analyze/csv" \
-      -H "Content-Type: text/csv" \
-      --data-binary "@retail-session.csv"
+```bash
+curl -X POST "http://127.0.0.1:8501/api/analyze/csv" \
+  -H "Content-Type: text/csv" \
+  --data-binary "@retail-session.csv"
+```
 
 The analysis endpoint returns normalized frame records, counts read/removed, summary metrics, zone coverage, an illustrative activity grid, and the independent sample inventory fixture. Validation failures return HTTP 422. Requests above 5 MB or CSVs above 50,000 non-empty records return HTTP 413.
 
@@ -199,30 +215,38 @@ The analysis endpoint returns normalized frame records, counts read/removed, sum
 
 Generate a deterministic demo session:
 
-    from src.retail import run_demo_session
+```python
+from src.retail import run_demo_session
 
-    session = run_demo_session(frames=30, queue_threshold=5)
-    print(session[0])
+session = run_demo_session(frames=30, queue_threshold=5)
+print(session[0])
+```
 
 The existing supporting module **src/retail_features.py** contains optional person-detection and derived-metric helpers for future experiments. The default web workspace does **not** invoke the optional YOLO detector; it runs synthetic data by default, preventing surprise model download or image inference during startup.
 
 To generate the sample JSON artifact with the helper script:
 
-    python scripts/generate_demo_data.py
+```bash
+python scripts/generate_demo_data.py
+```
 
 ## Development and testing
 
 Install development dependencies:
 
-    python -m pip install -r requirements-dev.txt
+```bash
+python -m pip install -r requirements-dev.txt
+```
 
 Run checks from the repository root:
 
-    ruff check src run.py tests
-    node --check web/app.js
-    bandit -q -r src run.py -ll
-    pip-audit -r requirements.txt --progress-spinner off
-    pytest -v
+```bash
+ruff check src run.py tests
+node --check web/app.js
+bandit -q -r src run.py -ll
+pip-audit -r requirements.txt --progress-spinner off
+pytest -v
+```
 
 GitHub Actions runs the linter, JavaScript syntax check, Bandit, dependency audit, and pytest.
 
