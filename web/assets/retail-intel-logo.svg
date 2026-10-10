@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Retail Intel</title><desc id="desc">A retail storefront with a rising analytics line.</desc>
+  <defs><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd98b"/><stop offset="1" stop-color="#d99c3c"/></linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#211e19" stroke="#635038" stroke-width="1.5"/>
+  <path d="M13 26 18 14h28l5 12" fill="none" stroke="url(#gold)" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M13 26h38v25H13z" fill="#342b1d" stroke="#e6b25d" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M18 26v-4h7v4m7 0v-4h7v4m7 0v-4h7v4" fill="none" stroke="#e6b25d" stroke-width="1.6"/>
+  <path d="M19 44 26 37l6 3 11-12" fill="none" stroke="#ffda8c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="43" cy="28" r="2.4" fill="#ffda8c"/>
+</svg>
