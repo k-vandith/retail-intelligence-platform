@@ -1,3 +1,5 @@
-def test_ui_entrypoint():
-    import src.app as app
-    assert callable(app.main)
+from src.app import main
+
+
+def test_ui_entrypoint() -> None:
+    assert callable(main)
