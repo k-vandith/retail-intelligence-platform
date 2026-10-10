@@ -125,8 +125,8 @@ def test_csv_analysis_normalizes_aliases_skips_invalid_and_deduplicates() -> Non
     "content, expected_detail",
     [
         (b"", "non-empty"),
-        (b"frame,people_count\\n0,4\\n", "Missing required"),
-        (b"frame,people_count,queue_length\\n0,not-a-count,2\\n", "No valid frame"),
+        (b"frame,people_count\n0,4\n", "Missing required"),
+        (b"frame,people_count,queue_length\n0,not-a-count,2\n", "No valid frame"),
     ],
 )
 def test_csv_analysis_returns_clear_validation_errors(content: bytes, expected_detail: str) -> None:
