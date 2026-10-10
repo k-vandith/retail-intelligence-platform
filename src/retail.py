@@ -1,8 +1,6 @@
 """Privacy-conscious retail analytics: counting, zones, queues (no facial recognition)."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from pathlib import Path
-import json
 import numpy as np
 
 @dataclass
@@ -32,10 +30,14 @@ def analyze_synthetic_frame(seed: int = 0, queue_threshold: int = 5) -> FrameAna
             alerts.append(f"Low stock: {sku}={qty}")
     return FrameAnalytics(people, entries, exits, zones, queue, wait, alerts)
 
-def run_demo_session(frames: int = 20) -> list[dict]:
+def run_demo_session(frames: int = 20, queue_threshold: int = 5) -> list[dict]:
+    if frames < 1:
+        raise ValueError("frames must be positive")
+    if queue_threshold < 1:
+        raise ValueError("queue_threshold must be positive")
     results = []
     for i in range(frames):
-        a = analyze_synthetic_frame(seed=i)
+        a = analyze_synthetic_frame(seed=i, queue_threshold=queue_threshold)
         results.append({
             "frame": i,
             "people_count": a.people_count,

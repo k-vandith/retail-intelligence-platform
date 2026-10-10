@@ -1,184 +1,265 @@
 # Retail Intelligence Platform
 
-Privacy-conscious in-store analytics: footfall-style counting from frame sequences, queue estimation, and session metrics — designed to avoid storing identifiable imagery.
+<p align="center">
+  <img src="web/assets/retail-intel-logo.svg" alt="Retail Intel logo" width="104">
+</p>
 
-## Problem Statement
+**A privacy-conscious retail operations dashboard for aggregate shopper flow, queue pressure, and sample shelf availability.** Built with HTML, CSS, vanilla JavaScript, FastAPI, and a deterministic Python demo engine.
 
-Retailers want occupancy and queue insights without building invasive surveillance stacks. A local pipeline that works on synthetic frames and aggregate metrics supports pilots and demos.
+> **Demo status:** built-in counts and shelf levels are fictional examples, not measurements from a live store. The web workspace accepts numeric aggregate CSV data only; it does not accept or store photos, video, faces, or biometric identifiers.
 
 ## Overview
 
-Process image frames or synthetic motion features, estimate counts and queue pressure, and display KPIs in Streamlit. Default mode uses generated data so no camera is required.
+Retail teams need simple indicators for shopper volume and queue pressure without introducing a facial-recognition or video-retention system. This project provides a local-first workspace for exploring frame-level counts, queue heuristics, optional zone aggregates, and an illustrative shelf-level table. The default workflow uses deterministic synthetic data and runs without a webcam, GPU, paid API, or pretrained-model download.
 
 ## Features
 
-- **Frame / session metrics**
-- **Queue estimation heuristics**
-- **Privacy-first design** – aggregates over raw face storage
-- **Streamlit KPI dashboard**
-- **Demo data generator**
+- **Focused workspace pages:** Store Overview, Shopper Flow, Queue Watch, Shelf Checks, and Data Sessions each have a dedicated route.
+- **Synthetic session generator:** repeatable, seeded frame records with shopper, entry/exit, zone, and queue counts.
+- **Aggregate CSV import:** validates required columns, normalizes aliases, skips invalid records, sorts frames, and keeps the last valid record for duplicate frame IDs.
+- **Shopper timeline:** native SVG chart with no external charting dependency.
+- **Queue review:** configurable threshold, flagged-frame list, and transparent estimate based on an assumed service rate of 1.5 shoppers per minute.
+- **Zone rollup and activity projection:** averages optional zone counts and shows a clearly labeled illustrative grid built from frame counts.
+- **Sample inventory table:** configurable low-shelf threshold and restock list. Shelf values are independent demo fixtures, not camera estimates.
+- **Exports:** active aggregate frame records as CSV, sample inventory as CSV, and a JSON analytics report.
+- **Local-first UI:** no CDN, external font, database, authentication token, or external API is required for the demo.
 
 ## Architecture
 
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Streamlit  │────▶│   Retail     │────▶│  Metrics +  │
-│     UI      │     │   engine     │     │  sessions   │
-└─────────────┘     └──────┬───────┘     └─────────────┘
-                           │
-                    ┌──────▼───────┐
-                    │ Frames / CSV │
-                    └──────────────┘
+```text
+                HTML / CSS / Vanilla JavaScript
+                              |
+                              v
+                 FastAPI local HTTP endpoints
+                    /api/demo  /api/analyze/csv
+                              |
+                              v
+                  Python aggregate analytics
+                  session / queue / zones
+                              |
+                              v
+                         Counts only
+
+          No image upload, face storage, or live camera path
 ```
 
-## Tech Stack
+## Tech stack
 
 - Python 3.11+
-- NumPy / Pandas
-- Pillow
-- Streamlit
-- pytest
+- FastAPI and Uvicorn
+- NumPy for deterministic synthetic samples
+- Pandas and Pillow for existing supporting data utilities
+- HTML, CSS, and vanilla JavaScript for the user interface
+- pytest, Ruff, Bandit, and pip-audit for validation
 
-## Repository Structure
+## Repository structure
 
-```
+```text
 retail-intelligence-platform/
 ├── README.md
+├── run.py
 ├── requirements.txt
+├── requirements-dev.txt
+├── web/
+│   ├── index.html
+│   ├── styles.css
+│   ├── app.js
+│   └── assets/
+│       └── retail-intel-logo.svg
 ├── src/
-│   └── retail.py
-├── tests/
-│   └── test_retail.py
-├── data/
+│   ├── api.py
+│   ├── app.py
+│   ├── retail.py
+│   ├── retail_features.py
+│   └── ui_theme.py
 ├── scripts/
 │   ├── setup_env.py
 │   ├── setup.sh
 │   ├── setup.ps1
 │   └── generate_demo_data.py
-└── docs/
+└── tests/
+    ├── test_retail.py
+    ├── test_retail_features.py
+    ├── test_retail_api.py
+    └── test_ui_smoke.py
 ```
 
-## System Requirements
+## Quick start
 
-| Mode | CPU | RAM | Disk | GPU |
-|------|-----|-----|------|-----|
-| Demo | Any | 1 GB | 500 MB | Not needed |
+Requirements: Python 3.11 or newer.
 
-## Installation
-
-### Recommended (all platforms) — automated bootstrap
-
-Handles missing `ensurepip`, symlink restrictions, and installs dependencies into `.venv`:
-
-```bash
-git clone https://github.com/k-vandith/retail-intelligence-platform.git
-cd retail-intelligence-platform
-python3 scripts/setup_env.py    # or:  python scripts/setup_env.py
-```
-
-Then activate:
-
-```bash
-# Linux / macOS
-source .venv/bin/activate
-
-# Windows PowerShell
-.venv\Scripts\Activate.ps1
-```
-
-### Manual setup
-
-#### Windows (PowerShell)
+### Windows PowerShell
 
 ```powershell
 git clone https://github.com/k-vandith/retail-intelligence-platform.git
 cd retail-intelligence-platform
-python -m venv .venv --copies
+py -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+python run.py
 ```
 
-#### Linux / macOS
+### macOS / Linux
 
 ```bash
 git clone https://github.com/k-vandith/retail-intelligence-platform.git
 cd retail-intelligence-platform
-# If venv fails with ensurepip errors:
-#   sudo apt install python3-venv python3-pip
-python3 -m venv .venv --copies
+python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+python run.py
 ```
 
-### Why `--copies`?
+Open **http://127.0.0.1:8501**.
 
-Some environments cannot create symlinks inside a venv (`Operation not permitted` on `lib64 → lib`). Using `--copies` avoids that. `scripts/setup_env.py` tries `--copies` first automatically.
+The app binds to loopback by default and is designed for local development. Choose another port with:
 
-## Environment Variables
+```bash
+python run.py --port 8502
+```
 
-None required.
+The API documentation is at **http://127.0.0.1:8501/docs** and its OpenAPI schema at **http://127.0.0.1:8501/openapi.json**.
 
-## Dataset / Demo Mode
+### Automated environment setup
+
+The repository also includes a cross-platform environment helper:
+
+```bash
+python scripts/setup_env.py
+```
+
+Activate the environment it creates, then start the app with **python run.py**. The helper installs runtime dependencies; use **requirements-dev.txt** when developing or running the full test suite.
+
+## Workspace guide
+
+| Page | Route | Purpose |
+| --- | --- | --- |
+| Store Overview | / | Key session metrics, shopper trend, and attention signals |
+| Shopper Flow | /traffic | Available zone rollups and illustrative activity grid |
+| Queue Watch | /queues | Change alert threshold and inspect frames above it |
+| Shelf Checks | /inventory | Tune low-shelf trigger, review sample inventory, export CSV |
+| Data Sessions | /sessions | Generate synthetic data, import aggregate CSV, inspect and export the active session |
+
+### Typical workflow
+
+1. Open **Data Sessions** and generate a reproducible sample, or select a CSV to analyze.
+2. Use **Store Overview** to scan peak/average shopper counts and attention signals.
+3. Visit **Shopper Flow** to compare zone averages if the uploaded file contains zone columns.
+4. Visit **Queue Watch** to change the threshold and inspect flagged frames. The estimated wait is a heuristic based on a fixed 1.5-shoppers-per-minute service rate; it is not a measured queue wait.
+5. Use **Shelf Checks** to tune the sample inventory trigger.
+6. Export the active session as CSV or JSON. Exports are generated by the browser and are not automatically uploaded or saved to a server database.
+
+## Aggregate CSV format
+
+Required columns:
+
+| Canonical field | Accepted aliases | Meaning |
+| --- | --- | --- |
+| <code>frame</code> | <code>frame_id</code>, <code>frame_index</code>, <code>sample</code> | Frame or sample identifier |
+| <code>people_count</code> | <code>person_count</code>, <code>persons</code>, <code>shoppers</code>, <code>shopper_count</code> | Aggregate shopper count for that sample |
+| <code>queue_length</code> | <code>queue</code>, <code>queue_count</code>, <code>line_length</code> | Aggregate queue length |
+
+Optional columns:
+
+| Canonical field | Accepted aliases | Meaning |
+| --- | --- | --- |
+| <code>entries</code> | <code>entry_count</code>, <code>entrants</code> | Entry count |
+| <code>exits</code> | <code>exit_count</code>, <code>leavers</code> | Exit count |
+| <code>zone_entrance</code> | <code>entrance_count</code>, <code>entrance</code> | Aggregate entrance-zone count |
+| <code>zone_aisle</code> | <code>aisle_count</code>, <code>aisle</code> | Aggregate aisle-zone count |
+| <code>zone_checkout</code> | <code>checkout_count</code>, <code>checkout</code> | Aggregate checkout-zone count |
+
+Example:
+
+```csv
+frame,people_count,entries,exits,queue_length,zone_entrance,zone_aisle,zone_checkout
+0,4,1,0,2,1,2,1
+1,6,2,0,4,2,3,1
+2,8,1,1,6,2,4,2
+```
+
+Column names are normalized case-insensitively. Counts must be non-negative whole numbers. Invalid rows are skipped; duplicate frame identifiers keep the last valid record, and valid rows are sorted by frame ID. At least one valid record must remain. The upload limit is **5 MB** and **50,000 non-empty records**.
+
+Only aggregate counts are supported. The CSV importer intentionally does not accept a path to images or video, and it does not store raw visual material. Zone statistics are unavailable when the corresponding zone columns are not supplied.
+
+Download a starter CSV from the app or use **GET /api/template.csv**.
+
+## HTTP API
+
+All endpoints run on the same local origin as the interface.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | / | Serve the overview page |
+| GET | /traffic, /queues, /inventory, /sessions | Serve direct-linkable workspace pages |
+| GET | /styles.css, /app.js | Serve local frontend assets |
+| GET | /assets/retail-intel-logo.svg | Serve logo and favicon asset |
+| GET | /api/health | Health status and operating mode |
+| GET | /api/demo?frames=40&queue_threshold=5 | Generate synthetic frame data (10–120 frames; threshold 2–12) |
+| GET | /api/template.csv | Download the aggregate CSV template |
+| POST | /api/analyze/csv | Validate and normalize a raw CSV request body |
+
+CSV request example:
+
+```bash
+curl -X POST "http://127.0.0.1:8501/api/analyze/csv" \
+  -H "Content-Type: text/csv" \
+  --data-binary "@retail-session.csv"
+```
+
+The analysis endpoint returns normalized frame records, counts read/removed, summary metrics, zone coverage, an illustrative activity grid, and the independent sample inventory fixture. Validation failures return HTTP 422. Requests above 5 MB or CSVs above 50,000 non-empty records return HTTP 413.
+
+## Python usage
+
+Generate a deterministic demo session:
+
+```python
+from src.retail import run_demo_session
+
+session = run_demo_session(frames=30, queue_threshold=5)
+print(session[0])
+```
+
+The existing supporting module **src/retail_features.py** contains optional person-detection and derived-metric helpers for future experiments. The default web workspace does **not** invoke the optional YOLO detector; it runs synthetic data by default, preventing surprise model download or image inference during startup.
+
+To generate the sample JSON artifact with the helper script:
 
 ```bash
 python scripts/generate_demo_data.py
 ```
 
-## Running the Application
+## Development and testing
+
+Install development dependencies:
 
 ```bash
-streamlit run src/retail.py
+python -m pip install -r requirements-dev.txt
 ```
 
-## API Usage
-
-```python
-from src.retail import process_session
-print(process_session("data/demo_session/"))
-```
-
-## Testing
+Run checks from the repository root:
 
 ```bash
+ruff check src run.py tests
+node --check web/app.js
+bandit -q -r src run.py -ll
+pip-audit -r requirements.txt --progress-spinner off
 pytest -v
 ```
 
-## Troubleshooting
+GitHub Actions runs the linter, JavaScript syntax check, Bandit, dependency audit, and pytest.
 
-| Issue | Fix |
-|-------|-----|
-| `ModuleNotFoundError: src` | Run from project root; ensure `PYTHONPATH=.` |
-| `venv` / ensurepip fails | Run `python3 scripts/setup_env.py` or install `python3-venv` |
-| `Operation not permitted` on lib64 | Use `python3 -m venv .venv --copies` |
-| Missing dependency | Activate `.venv` and re-run `pip install -r requirements.txt` |
+## Privacy, security, and limitations
 
-## Limitations
-
-- Demo counting is heuristic; production CV models are optional extensions.
-- Not a loss-prevention or facial-recognition system.
-- Camera drivers and edge deployment are out of scope for the base repo.
-
-## Security / Privacy
-
-- Prefer aggregate metrics; avoid retaining identifiable faces.
-- Comply with local CCTV / privacy regulations when connecting real cameras.
-
-## Future Improvements
-
-- Optional ONNX person-detector backend
-- Multi-store rollups
-- Anonymisation filters before storage
+- The default data is deterministic synthetic data and must not be represented as observed store activity.
+- The shelf levels are a separate fictional inventory fixture. They are not computed from camera frames or imported shopper counts.
+- The activity grid visualizes a deterministic projection of frame counts, not a floorplan, actual location, or true dwell time.
+- Queue waits are rough estimates under a constant service-rate assumption. They are not measured predictions.
+- The browser session is in memory. Data is not written to a persistent database by the dashboard.
+- Bind to loopback for local use. The development API has no authentication and should not be exposed directly to the public internet.
+- Real deployments that connect cameras or third-party detectors need a separate privacy, consent, security, and jurisdictional review. The current web UI does not implement a live camera or video-ingestion path.
 
 ## License
 
-MIT
-
-## Interface
-
-```bash
-python run.py
-```
-
-Opens the local Streamlit workspace on port 8501. Demo paths work without GPU, webcam, or a paid API. `streamlit run src/app.py` is equivalent.
+MIT. See LICENSE.

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171714">
+  <meta name="description" content="Privacy-conscious retail floor analytics for shopper flow, queues, and shelf availability.">
+  <link rel="icon" type="image/svg+xml" href="/assets/retail-intel-logo.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+  <title>Store overview | Retail Intel</title>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" data-route-link aria-label="Retail Intel overview">
+        <img src="/assets/retail-intel-logo.svg" class="brand-logo" alt="">
+        <span><strong>RETAIL INTEL</strong><small>Store operations studio</small></span>
+      </a>
+      <div class="nav-caption">STORE WORKSPACE</div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <a class="nav-item active" href="/" data-route-link data-page-link="overview" aria-current="page"><span class="nav-icon">◫</span>Overview</a>
+        <a class="nav-item" href="/traffic" data-route-link data-page-link="traffic"><span class="nav-icon">⌁</span>Shopper flow</a>
+        <a class="nav-item" href="/queues" data-route-link data-page-link="queues"><span class="nav-icon">≋</span>Queue watch</a>
+        <a class="nav-item" href="/inventory" data-route-link data-page-link="inventory"><span class="nav-icon">▦</span>Shelf checks</a>
+        <a class="nav-item" href="/sessions" data-route-link data-page-link="sessions"><span class="nav-icon">⇧</span>Data sessions</a>
+      </nav>
+
+      <div class="privacy-card">
+        <span class="privacy-shield" aria-hidden="true">◇</span>
+        <div class="nav-caption">PRIVACY MODE</div>
+        <strong>Aggregate signals only</strong>
+        <p>This dashboard analyzes counts and session metrics. It does not store faces or accept image uploads.</p>
+      </div>
+      <div class="sidebar-bottom">
+        <span class="connection-dot"></span><span id="api-status">Connecting to local engine…</span>
+        <small>LOCAL DEMO · NO PAID API</small>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>Retail operations</span><span class="crumb-slash">/</span><strong id="page-title">Store overview</strong></div>
+        <div class="topbar-actions">
+          <span class="source-pill"><span class="connection-dot"></span><span id="source-label">Synthetic demo</span></span>
+          <button id="export-report" class="button button-quiet" type="button">Export report <span>↗</span></button>
+        </div>
+      </header>
+
+      <section class="page-view" data-view="overview">
+        <section class="hero">
+          <div class="hero-copy">
+            <div class="eyebrow"><span></span>STORE PERFORMANCE / 01</div>
+            <h1>See your store<br><em>in motion.</em></h1>
+            <p>A privacy-conscious pulse on footfall, checkout pressure, and shelf availability — built for fast operational decisions.</p>
+            <div class="hero-actions"><a class="button button-primary" href="/traffic" data-route-link>Explore shopper flow <span>→</span></a><a class="button button-quiet" href="/sessions" data-route-link>Load a dataset</a></div>
+          </div>
+          <div class="hero-graphic" aria-hidden="true">
+            <div class="hero-ring ring-one"></div><div class="hero-ring ring-two"></div><div class="hero-ring ring-three"></div>
+            <div class="hero-core"><span>RI</span><small>OPS SIGNAL</small></div>
+            <span class="hero-tag tag-one">FLOW</span><span class="hero-tag tag-two">QUEUE</span><span class="hero-tag tag-three">SHELF</span>
+          </div>
+        </section>
+
+        <section class="session-strip" aria-live="polite">
+          <div class="session-mark">◈</div>
+          <div class="session-copy"><strong id="dataset-title">Synthetic floor session</strong><span id="dataset-subtitle">Generating sample observations…</span></div>
+          <div class="session-count"><strong id="session-count">—</strong><span>frames analyzed</span></div>
+          <div class="session-actions"><a href="/sessions" data-route-link>Manage session <span>↗</span></a></div>
+        </section>
+
+        <section class="kpi-grid" aria-label="Store performance metrics">
+          <article class="kpi-card kpi-primary"><div class="kpi-label">PEAK FLOOR COUNT <span>01</span></div><div class="kpi-number" id="kpi-peak">—</div><div class="kpi-foot">Highest shopper count in a frame</div><div class="kpi-spark spark-gold"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+          <article class="kpi-card"><div class="kpi-label">AVERAGE SHOPPERS <span>02</span></div><div class="kpi-number" id="kpi-average">—</div><div class="kpi-foot">Mean count across frame samples</div><div class="kpi-trend" id="kpi-average-foot">Session aggregate</div></article>
+          <article class="kpi-card"><div class="kpi-label">QUEUE ALERTS <span>03</span></div><div class="kpi-number" id="kpi-alerts">—</div><div class="kpi-foot">Frames above your threshold</div><div class="kpi-trend" id="kpi-alerts-foot">Threshold: 5 shoppers</div></article>
+          <article class="kpi-card"><div class="kpi-label">LOW SHELVES <span>04</span></div><div class="kpi-number" id="kpi-low-shelves">—</div><div class="kpi-foot">Sample inventory fixture</div><div class="kpi-trend" id="kpi-shelf-foot">Restock candidates</div></article>
+        </section>
+
+        <section class="dashboard-grid overview-grid">
+          <article class="panel chart-panel">
+            <div class="panel-heading"><div><div class="section-label">FOOTFALL TIMELINE</div><h2>Shoppers by frame</h2><p>Count estimate across the active session.</p></div><span class="panel-badge">SESSION TRACE</span></div>
+            <div id="people-chart" class="chart-area" role="img" aria-label="Shopper count by frame"><div class="empty-state">Preparing session trace…</div></div>
+            <div class="chart-footer"><span id="chart-range">—</span><span>Counts only · no images retained</span></div>
+          </article>
+          <article class="panel pulse-panel">
+            <div class="panel-heading"><div><div class="section-label">OPERATOR PULSE</div><h2>What needs attention?</h2><p>Signals from the current session.</p></div></div>
+            <div id="attention-list" class="attention-list"><div class="empty-state compact">Preparing signals…</div></div>
+            <a class="panel-link" href="/queues" data-route-link>Open queue watch <span>→</span></a>
+          </article>
+        </section>
+
+        <section class="shortcuts">
+          <div class="section-heading"><div><div class="section-label">WORKSPACE SHORTCUTS</div><h2>Choose your next task</h2></div><span>Focused tools, separate pages</span></div>
+          <div class="shortcut-grid">
+            <a class="shortcut-card" href="/traffic" data-route-link><span class="shortcut-icon">⌁</span><span><strong>Shopper flow</strong><small>Explore zone activity and traffic distribution.</small></span><b>↗</b></a>
+            <a class="shortcut-card" href="/queues" data-route-link><span class="shortcut-icon">≋</span><span><strong>Queue watch</strong><small>Adjust thresholds and inspect peak waits.</small></span><b>↗</b></a>
+            <a class="shortcut-card" href="/inventory" data-route-link><span class="shortcut-icon">▦</span><span><strong>Shelf checks</strong><small>Prioritize demo restock candidates.</small></span><b>↗</b></a>
+            <a class="shortcut-card" href="/sessions" data-route-link><span class="shortcut-icon">⇧</span><span><strong>Data sessions</strong><small>Generate sample data or import aggregate CSV.</small></span><b>↗</b></a>
+          </div>
+        </section>
+      </section>
+
+      <section class="page-view" data-view="traffic" hidden>
+        <section class="page-intro">
+          <div class="eyebrow"><span></span>SHOPPER FLOW / 02</div>
+          <h1>Follow the<br><em>floor activity.</em></h1>
+          <p>Compare the zone counts supplied by the current aggregate session and inspect a simulated intensity projection.</p>
+        </section>
+        <section class="dashboard-grid traffic-grid">
+          <article class="panel zone-panel"><div class="panel-heading"><div><div class="section-label">ZONE DISTRIBUTION</div><h2>Where counts concentrate</h2><p>Average observed people count per supplied zone.</p></div></div><div id="zone-list" class="zone-list"><div class="empty-state">Waiting for zone data…</div></div></article>
+          <article class="panel activity-panel"><div class="panel-heading"><div><div class="section-label">SIMULATED PROJECTION</div><h2>Activity intensity grid</h2><p>A synthetic projection from frame counts — not a store floorplan or real dwell measurement.</p></div><span class="panel-badge">ILLUSTRATIVE</span></div><div id="activity-grid" class="activity-grid" aria-label="Illustrative synthetic activity grid"></div><div class="heat-legend"><span>Lower activity</span><i></i><i></i><i></i><i></i><span>Higher activity</span></div></article>
+        </section>
+        <article class="panel method-panel"><div class="method-icon">ⓘ</div><div><strong>Know what the signal represents</strong><p>Zone totals appear only when the imported CSV contains zone columns. A grid based on frame order is illustrative, not a spatial inference from video.</p></div></article>
+      </section>
+
+      <section class="page-view" data-view="queues" hidden>
+        <section class="page-intro">
+          <div class="eyebrow"><span></span>QUEUE WATCH / 03</div>
+          <h1>Keep the line<br><em>moving.</em></h1>
+          <p>Find queue pressure early with a transparent threshold and a simple service-rate estimate. This is an operational heuristic, not a measured wait time.</p>
+        </section>
+        <section class="queue-control-panel panel">
+          <div><div class="section-label">ALERT CONFIGURATION</div><h2>Queue length threshold</h2><p>Set when a sampled frame should be flagged for review.</p></div>
+          <label class="slider-control" for="queue-threshold"><span>Flag at <output id="queue-threshold-out">5 shoppers</output></span><input id="queue-threshold" type="range" min="2" max="12" step="1" value="5"></label>
+        </section>
+        <section class="queue-kpi-grid">
+          <article class="queue-kpi"><span>PEAK QUEUE</span><strong id="queue-peak">—</strong><small>Largest queue in current session</small></article>
+          <article class="queue-kpi"><span>AVG QUEUE</span><strong id="queue-average">—</strong><small>Mean across sampled frames</small></article>
+          <article class="queue-kpi"><span>EST. PEAK WAIT</span><strong id="queue-wait">—</strong><small>Assumes 1.5 shoppers served per minute</small></article>
+        </section>
+        <article class="panel queue-review-panel"><div class="panel-heading"><div><div class="section-label">FRAME-BY-FRAME REVIEW</div><h2>Queue watchlist</h2><p>Only frames at or above the selected threshold are shown.</p></div><span class="panel-badge" id="queue-status-chip">CALCULATING</span></div><div class="queue-status" id="queue-status"><strong>Preparing queue review…</strong><span></span></div><div class="table-wrap"><table><thead><tr><th>FRAME</th><th>QUEUE</th><th>EST. WAIT</th><th>STATUS</th></tr></thead><tbody id="queue-table"><tr><td colspan="4">Waiting for data…</td></tr></tbody></table></div><div class="panel-foot" id="queue-foot">Threshold controlled above.</div></article>
+      </section>
+
+      <section class="page-view" data-view="inventory" hidden>
+        <section class="page-intro">
+          <div class="eyebrow"><span></span>SHELF CHECKS / 04</div>
+          <h1>Spot the next<br><em>restock.</em></h1>
+          <p>Review a small sample inventory fixture and tune what counts as a low shelf. This table is demo data, not inventory inferred from a camera.</p>
+        </section>
+        <section class="queue-control-panel panel">
+          <div><div class="section-label">STOCK RULE</div><h2>Low-shelf trigger</h2><p>Show items whose supplied shelf fill falls below this level.</p></div>
+          <label class="slider-control" for="shelf-threshold"><span>Flag below <output id="shelf-threshold-out">25%</output></span><input id="shelf-threshold" type="range" min="5" max="50" step="5" value="25"></label>
+        </section>
+        <section class="inventory-summary-grid">
+          <article class="inventory-summary"><span class="summary-icon">▦</span><div><small>ITEMS IN SAMPLE</small><strong id="inventory-count">—</strong></div></article>
+          <article class="inventory-summary"><span class="summary-icon">!</span><div><small>RESTOCK CANDIDATES</small><strong id="inventory-low-count">—</strong></div></article>
+          <article class="inventory-summary"><span class="summary-icon">◉</span><div><small>AVG. SHELF FILL</small><strong id="inventory-average">—</strong></div></article>
+        </section>
+        <article class="panel inventory-panel"><div class="panel-heading"><div><div class="section-label">SAMPLE INVENTORY FIXTURE</div><h2>Shelf availability</h2><p>Illustrative fill percentage and recommended action.</p></div><button class="button button-quiet" id="export-inventory" type="button">Export inventory CSV ↓</button></div><div class="table-wrap"><table><thead><tr><th>ITEM / ZONE</th><th>SHELF FILL</th><th>STATUS</th><th>NEXT ACTION</th></tr></thead><tbody id="inventory-table"><tr><td colspan="4">Loading inventory fixture…</td></tr></tbody></table></div><div class="panel-foot">The starter levels are fictional examples.</div></article>
+      </section>
+
+      <section class="page-view" data-view="sessions" hidden>
+        <section class="page-intro">
+          <div class="eyebrow"><span></span>DATA SESSIONS / 05</div>
+          <h1>Bring your<br><em>own signals.</em></h1>
+          <p>Run a reproducible synthetic session or analyze CSV counts. The importer accepts aggregates only — never photos, videos, or biometric identifiers.</p>
+        </section>
+        <section class="session-tools-grid">
+          <article class="panel session-tool"><div class="panel-heading"><div><div class="section-label">SYNTHETIC DATA</div><h2>Generate a session</h2><p>Reproducible sample records for offline exploration.</p></div><span class="panel-badge">NO CAMERA</span></div><label class="field-label" for="demo-frames">Frames to generate <output id="demo-frames-out">40</output></label><input id="demo-frames" type="range" min="10" max="120" step="10" value="40"><p class="field-help">Choose from 10–120 simulated frames.</p><button class="button button-primary" id="load-demo" type="button">Generate demo session →</button></article>
+          <article class="panel session-tool"><div class="panel-heading"><div><div class="section-label">AGGREGATE IMPORT</div><h2>Analyze a CSV</h2><p>Use cleaned counts from an existing analytics pipeline.</p></div><span class="panel-badge">CSV ONLY</span></div><div class="file-drop" id="file-drop"><input type="file" id="csv-file" accept=".csv,text/csv" aria-label="Choose aggregate retail CSV"><span class="upload-icon">↑</span><strong>Drop CSV or browse</strong><span id="file-name">No file selected</span></div><div class="session-tool-actions"><button class="button button-primary" id="analyze-csv" type="button" disabled>Analyze file</button><a class="button button-quiet" href="/api/template.csv">Download CSV template ↓</a></div><p class="field-help">Required: frame, people_count, queue_length. Entries, exits, and zone counts are optional.</p></article>
+        </section>
+        <section class="session-detail-grid">
+          <article class="panel current-session-panel"><div class="panel-heading"><div><div class="section-label">ACTIVE SESSION</div><h2 id="active-session-title">Synthetic floor session</h2><p id="active-session-meta">Loading session summary…</p></div></div><div class="current-session-stats"><div><span>Rows read</span><strong id="rows-read">—</strong></div><div><span>Rows skipped</span><strong id="rows-removed">—</strong></div><div><span>Source</span><strong id="session-source">—</strong></div></div><div class="session-tool-actions"><button class="button button-secondary" id="export-session-csv" type="button">Export current CSV ↓</button><button class="button button-quiet" id="export-session-json" type="button">Export JSON report ↓</button></div></article>
+          <article class="panel schema-panel"><div class="section-label">CSV COLUMN GUIDE</div><h2>Expected fields</h2><p><code>frame</code>, <code>people_count</code>, <code>queue_length</code> are required. Optional: <code>entries</code>, <code>exits</code>, <code>zone_entrance</code>, <code>zone_aisle</code>, <code>zone_checkout</code>.</p><p>Counts must be non-negative integers. Invalid rows are skipped; duplicate frame IDs retain the last valid record.</p></article>
+        </section>
+        <article class="panel frame-table-panel"><div class="panel-heading"><div><div class="section-label">SESSION SAMPLE</div><h2>Recent frame records</h2><p>Latest records from the active dataset.</p></div><span class="panel-badge" id="frames-table-count">— ROWS</span></div><div class="table-wrap"><table><thead><tr><th>FRAME</th><th>SHOPPERS</th><th>ENTRIES</th><th>EXITS</th><th>QUEUE</th><th>ALERTS</th></tr></thead><tbody id="frame-table"><tr><td colspan="6">Loading frame records…</td></tr></tbody></table></div></article>
+      </section>
+
+      <footer class="footer"><span><strong>RETAIL INTEL</strong> · Store operations studio</span><span>Synthetic examples only · no facial recognition · no images stored</span></footer>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+  </div>
+</body>
+</html>

@@ -60,7 +60,8 @@ def main():
     print("\n" + "=" * 60)
     print("Setup complete. Activate:")
     print(r"  .venv\Scripts\Activate.ps1" if IS_WIN else "  source .venv/bin/activate")
-    print("Then:  pytest -v")
+    print("Then:  python run.py")
+    print("For development checks: install requirements-dev.txt and run pytest -v")
     print("=" * 60)
 if __name__ == "__main__":
     main()
