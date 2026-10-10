@@ -18,7 +18,7 @@ def analyze_synthetic_frame(seed: int = 0, queue_threshold: int = 5) -> FrameAna
     people = int(rng.integers(0, 25))
     entries = int(rng.integers(0, 5))
     exits = int(rng.integers(0, 5))
-    zones = {f"zone_{z}": int(rng.integers(0, 10)) for z in ("entrance", "aisle", "checkout")}
+    zones = {z: int(rng.integers(0, 10)) for z in ("entrance", "aisle", "checkout")}
     queue = int(rng.integers(0, 12))
     wait = queue * 45.0
     alerts = []
