@@ -212,6 +212,8 @@ def _parse_csv(body: bytes) -> tuple[list[dict[str, Any]], int]:
     reader = csv.DictReader(io.StringIO(text))
     if not reader.fieldnames:
         raise HTTPException(status_code=422, detail="CSV is missing a header row")
+    if any(not str(header or "").strip() for header in reader.fieldnames):
+        raise HTTPException(status_code=422, detail="CSV header contains an empty column name")
 
     normalized_headers: dict[str, str] = {}
     for header in reader.fieldnames:
@@ -259,6 +261,11 @@ def _parse_csv(body: bytes) -> tuple[list[dict[str, Any]], int]:
     for record in reader:
         if not record or not any(str(value or "").strip() for value in record.values()):
             continue
+        if None in record:
+            raise HTTPException(
+                status_code=422,
+                detail="CSV row contains more values than the header defines; correct the row and retry.",
+            )
         rows_read += 1
         if rows_read > MAX_ROWS:
             raise HTTPException(status_code=413, detail=f"CSV exceeds the {MAX_ROWS:,}-row limit")
