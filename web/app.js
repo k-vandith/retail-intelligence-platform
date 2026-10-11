@@ -260,7 +260,9 @@ function renderInventory() {
     const fill = Math.max(0, Math.min(100, Number(row.occupancy) * 100));
     const alert = Number(row.occupancy) < threshold;
     return '<tr><td>' + escapeHTML(row.sku) + '</td><td><div class="fill-cell"><span class="fill-track"><span style="width:' + fill.toFixed(1) + '%"></span></span><b>' + Math.round(fill) + '%</b></div></td><td><span class="status-chip ' + (alert ? "warning" : "neutral") + '">' + (alert ? "Low shelf" : "In range") + '</span></td><td>' + (alert ? "Restock" : "Monitor") + "</td></tr>";
-  }).join("") : '<tr><td colspan="4">The sample inventory fixture is unavailable.</td></tr>';
+  }).join("") : '<tr><td colspan="4">' + (state.source === "synthetic-demo"
+    ? "The sample inventory fixture is unavailable."
+    : "No shelf inventory data was provided by this aggregate CSV.") + "</td></tr>";
   byId("kpi-low-shelves").textContent = formatNumber(low.length, 0);
   byId("kpi-shelf-foot").textContent = "Trigger below " + Math.round(threshold * 100) + "% fill";
 }
