@@ -233,7 +233,7 @@ function renderQueueReview() {
   byId("queue-threshold-out").textContent = threshold + " shoppers";
   byId("queue-peak").textContent = formatNumber(metrics.peak_queue, 0);
   byId("queue-average").textContent = formatNumber(metrics.average_queue, 1);
-  byId("queue-wait").textContent = formatNumber(metrics.peak_queue / 1.5, 1) + " min";
+  byId("queue-wait").textContent = state.source === "synthetic-demo" ? formatNumber(metrics.peak_queue / 1.5, 1) + " min · demo estimate" : "—";
   const chip = byId("queue-status-chip");
   chip.textContent = flagged.length ? flagged.length + " FLAGGED" : "NO BREACHES";
   chip.style.color = flagged.length ? "#f0c275" : "#9cceaa";
@@ -242,7 +242,7 @@ function renderQueueReview() {
     ? "<strong>" + flagged.length + " sampled frame(s) need queue review</strong><span>Trigger: queue length ≥ " + threshold + "</span>"
     : "<strong>No sampled frame crosses the threshold</strong><span>This applies to the current dataset only.</span>";
   byId("queue-table").innerHTML = flagged.length ? flagged.slice(0, 80).map((row) =>
-    '<tr><td>#' + formatNumber(row.frame, 0) + '</td><td>' + formatNumber(row.queue_length, 0) + '</td><td>' + formatNumber(Number(row.queue_length) / 1.5, 1) + ' min</td><td><span class="status-chip warning">Review queue</span></td></tr>'
+    '<tr><td>#' + formatNumber(row.frame, 0) + '</td><td>' + formatNumber(row.queue_length, 0) + '</td><td>' + (state.source === "synthetic-demo" ? formatNumber(Number(row.queue_length) / 1.5, 1) + ' min · demo' : '—') + '</td><td><span class="status-chip warning">Review queue</span></td></tr>'
   ).join("") : '<tr><td colspan="4">No frames meet the configured threshold. Lower the threshold or load another session to explore queue flags.</td></tr>';
   byId("queue-foot").textContent = flagged.length > 80 ? "Showing 80 of " + flagged.length + " flagged frames." : flagged.length + " flagged frame(s) · estimated wait assumes a fixed 1.5 shoppers/minute service rate.";
 }
