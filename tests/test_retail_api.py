@@ -262,3 +262,23 @@ def test_retail_client_report_does_not_invent_wait_times_for_uploaded_csv():
     assert 'peak_wait_minutes: state.source === "synthetic-demo"' in script
     assert 'estimated_wait_minutes: state.source === "synthetic-demo" ? Number(row.queue_length) / 1.5 : null' in script
     assert "rows_excluded_during_cleaning: state.rowsRemoved" in script
+
+
+
+@pytest.mark.parametrize(
+    "content, expected",
+    [
+        ("frame,people_count,queue_length\n0,3,2,extra\n", "more values than the header"),
+        (",people_count,queue_length\n0,3,2\n", "empty column name"),
+    ],
+)
+def test_csv_rejects_malformed_columns_instead_of_returning_partial_metrics(content, expected):
+    response = request(
+        "POST",
+        "/api/analyze/csv",
+        content=content,
+        headers={"Content-Type": "text/csv"},
+    )
+
+    assert response.status_code == 422
+    assert expected in response.json()["detail"]
