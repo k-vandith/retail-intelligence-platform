@@ -275,6 +275,11 @@ def _parse_csv(body: bytes) -> tuple[list[dict[str, Any]], int]:
                     continue
                 zone_values[zone] = _int_value(record.get(resolved[field]), maximum=10_000)
 
+            if frame_no in latest_by_frame:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Duplicate frame identifier {frame_no}; aggregate CSV rows must have unique frame IDs.",
+                )
             latest_by_frame[frame_no] = {
                 "frame": frame_no,
                 "people_count": people,
