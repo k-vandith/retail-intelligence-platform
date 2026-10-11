@@ -11,7 +11,7 @@ const PAGE_CONFIG = {
 
 const state = {
   frames: [],
-  source: "synthetic-demo",
+  source: "no-data",
   rowsRead: 0,
   rowsRemoved: 0,
   queueThreshold: 5,
@@ -21,7 +21,7 @@ const state = {
   activityGrid: [],
   shelves: [],
   busy: false,
-  datasetTitle: "Synthetic floor session",
+  datasetTitle: "No dataset loaded",
 };
 
 const byId = (id) => document.getElementById(id);
@@ -437,7 +437,15 @@ async function boot() {
   try {
     const health = await fetchJSON("/api/health");
     byId("api-status").textContent = "Local engine connected";
-    await loadDemo();
+    // Wait for the operator to upload measurements or explicitly choose the demo.
+    byId("dataset-title").textContent = "No dataset loaded";
+    byId("dataset-subtitle").textContent = "Upload aggregate CSV data or click Load demo for fictional sample values.";
+    byId("session-count").textContent = "0";
+    byId("source-badge").textContent = "No data loaded";
+    byId("export-report").disabled = true;
+    byId("export-session-csv").disabled = true;
+    byId("export-session-json").disabled = true;
+    byId("export-inventory").disabled = true;
     if (health.status !== "ok") byId("api-status").textContent = "Engine response received";
   } catch (error) {
     byId("api-status").textContent = "Local engine unavailable";
