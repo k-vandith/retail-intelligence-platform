@@ -163,7 +163,7 @@ def test_api_queue_wait_matches_the_documented_service_rate() -> None:
         assert frame["est_wait_sec"] == pytest.approx(frame["queue_length"] / 1.5 * 60)
 
 
-def test_uploaded_queue_wait_uses_same_service_rate_as_demo() -> None:
+def test_uploaded_queue_wait_is_unavailable_without_measured_service_rate() -> None:
     csv = "frame,people_count,queue_length\n0,3,3\n"
     response = request(
         "POST",
@@ -173,7 +173,10 @@ def test_uploaded_queue_wait_uses_same_service_rate_as_demo() -> None:
     )
 
     assert response.status_code == 200
-    assert response.json()["frames"][0]["est_wait_sec"] == pytest.approx(120)
+    assert response.json()["frames"][0]["est_wait_sec"] is None
+    assert response.json()["metrics"]["peak_wait_minutes"] is None
+    assert response.json()["metrics"]["peak_wait_alert"] is None
+    assert any("no measured service rate" in item for item in response.json()["limitations"])
 
 
 
