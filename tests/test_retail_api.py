@@ -133,3 +133,42 @@ def test_csv_analysis_returns_clear_validation_errors(content: bytes, expected_d
     response = request("POST", "/api/analyze/csv", content=content, headers={"Content-Type": "text/csv"})
     assert response.status_code == 422
     assert expected_detail.lower() in response.json()["detail"].lower()
+
+
+
+def test_csv_analysis_rejects_ambiguous_headers_after_normalization() -> None:
+    csv = (
+        "frame,people_count,people-count,queue_length\n"
+        "0,5,8,2\n"
+    )
+
+    response = request(
+        "POST",
+        "/api/analyze/csv",
+        content=csv,
+        headers={"Content-Type": "text/csv"},
+    )
+
+    assert response.status_code == 422
+    assert "ambiguous duplicate csv headers" in response.json()["detail"].lower()
+
+
+def test_api_queue_wait_matches_the_documented_service_rate() -> None:
+    response = request("GET", "/api/demo?frames=10")
+
+    assert response.status_code == 200
+    for frame in response.json()["frames"]:
+        assert frame["est_wait_sec"] == pytest.approx(frame["queue_length"] / 1.5 * 60)
+
+
+def test_uploaded_queue_wait_uses_same_service_rate_as_demo() -> None:
+    csv = "frame,people_count,queue_length\n0,3,3\n"
+    response = request(
+        "POST",
+        "/api/analyze/csv",
+        content=csv,
+        headers={"Content-Type": "text/csv"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["frames"][0]["est_wait_sec"] == pytest.approx(120)
