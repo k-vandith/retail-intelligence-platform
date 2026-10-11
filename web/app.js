@@ -88,7 +88,7 @@ function computeMetrics(frames) {
     peak_queue: queues.length ? Math.max(...queues) : 0,
     average_queue: queues.length ? queues.reduce((sum, value) => sum + value, 0) / queues.length : 0,
     queue_alert_count: queues.filter((value) => value >= state.queueThreshold).length,
-    peak_wait_minutes: (queues.length ? Math.max(...queues) : 0) / 1.5,
+    peak_wait_minutes: state.source === "synthetic-demo" ? (queues.length ? Math.max(...queues) : 0) / 1.5 : null,
   };
 }
 
@@ -336,14 +336,14 @@ function buildReport() {
     source: state.source,
     frame_count: state.frames.length,
     rows_read: state.rowsRead,
-    rows_removed_or_replaced: state.rowsRemoved,
+    rows_excluded_during_cleaning: state.rowsRemoved,
     queue_threshold: state.queueThreshold,
     shelf_low_threshold_percent: Math.round(state.shelfThreshold * 100),
     metrics: metrics,
     queue_flags: state.frames.filter((row) => Number(row.queue_length) >= state.queueThreshold).map((row) => ({
       frame: row.frame,
       queue_length: row.queue_length,
-      estimated_wait_minutes: Number(row.queue_length) / 1.5,
+      estimated_wait_minutes: state.source === "synthetic-demo" ? Number(row.queue_length) / 1.5 : null,
     })),
     inventory_fixture: state.shelves.map((shelf) => ({
       sku: shelf.sku,
