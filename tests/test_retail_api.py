@@ -227,3 +227,14 @@ def test_retail_ui_does_not_load_synthetic_demo_automatically():
     assert "await loadDemo()" not in boot
     assert 'byId("load-demo").addEventListener("click", loadDemo)' in script
     assert 'source: "no-data"' in script
+
+
+
+def test_imported_session_ui_does_not_present_missing_shelf_data_as_zero():
+    from pathlib import Path
+
+    script = (Path(__file__).resolve().parents[1] / "web" / "app.js").read_text(encoding="utf-8")
+    assert 'state.shelves.length ? formatNumber(lowShelves, 0) : "—"' in script
+    assert 'state.shelves.length ? formatNumber(low.length, 0) : "—"' in script
+    assert 'if (!state.shelves.length) return toast("No shelf inventory measurements are available for this dataset.", "error");' in script
+    assert '|| (id === "export-inventory" && noShelves)' in script
