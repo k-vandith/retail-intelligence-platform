@@ -142,8 +142,11 @@ def _payload(
     queues = [int(frame["queue_length"]) for frame in frames]
     shoppers = [int(frame["people_count"]) for frame in frames]
     peak_queue = max(queues, default=0)
-    shelves = shelf_occupancy(SHELF_FIXTURE, threshold=0.25)
-    grid = dwell_heatmap(shoppers, grid=8)
+    is_demo = source == "synthetic-demo"
+    # Inventory fixtures and the activity projection are demonstrations, not
+    # measurements derived from this aggregate CSV. Never mix them into uploads.
+    shelves = shelf_occupancy(SHELF_FIXTURE, threshold=0.25) if is_demo else []
+    grid = dwell_heatmap(shoppers, grid=8) if is_demo else None
     queue_wait = queue_wait_estimate(peak_queue)
 
     # Alert summaries are recalculated using the selected threshold instead of
@@ -173,16 +176,25 @@ def _payload(
             "peak_wait_alert": queue_wait["alert"],
         },
         "zones": _zone_summary(frames),
-        "activity_grid": [[round(float(cell), 3) for cell in row] for row in grid.tolist()],
+        "activity_grid": [[round(float(cell), 3) for cell in row] for row in grid.tolist()] if grid is not None else [],
         "shelves": shelves,
         "queue_threshold": queue_threshold,
-        "limitations": [
-            "Synthetic demo values are fictional and are not store measurements.",
-            "Queue wait is a simple estimate assuming 1.5 shoppers served per minute.",
-            "Activity grid is an illustrative projection of frame counts, not a store floorplan or true dwell measurement.",
-            "Shelf-fill values are a separate fictional inventory fixture and are not inferred from images.",
-            "Only aggregate numeric CSV data is accepted; this interface does not accept or store images or video.",
-        ],
+        "limitations": (
+            [
+                "Synthetic demo values are fictional and are not store measurements.",
+                "Queue wait is a simple estimate assuming 1.5 shoppers served per minute.",
+                "Activity grid is an illustrative projection of demo frame counts, not a store floorplan or true dwell measurement.",
+                "Shelf-fill values are a separate fictional inventory fixture and are not inferred from images.",
+                "Only aggregate numeric CSV data is accepted; this interface does not accept or store images or video.",
+            ]
+            if is_demo
+            else [
+                "Queue wait is a heuristic assuming 1.5 shoppers served per minute; validate this rate for the store.",
+                "No shelf inventory measurement is supplied by this aggregate CSV; shelf checks are unavailable.",
+                "No floorplan coordinates or dwell-time observations were supplied; the activity projection is unavailable.",
+                "Only aggregate numeric CSV data is accepted; this interface does not accept or store images or video.",
+            ]
+        ),
     }
 
 
