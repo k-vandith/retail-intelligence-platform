@@ -172,3 +172,25 @@ def test_uploaded_queue_wait_uses_same_service_rate_as_demo() -> None:
 
     assert response.status_code == 200
     assert response.json()["frames"][0]["est_wait_sec"] == pytest.approx(120)
+
+
+
+@pytest.mark.parametrize(
+    "header, row, canonical",
+    [
+        ("frame,people_count,shoppers,queue_length", "0,3,9,2", "people_count"),
+        ("frame,people_count,queue_length,queue_count", "0,3,2,9", "queue_length"),
+        ("frame,people_count,queue_length,zone_entrance,entrance_count", "0,3,2,1,7", "zone_entrance"),
+    ],
+)
+def test_csv_analysis_rejects_distinct_aliases_for_same_field(header, row, canonical) -> None:
+    response = request(
+        "POST",
+        "/api/analyze/csv",
+        content=f"{header}\n{row}\n",
+        headers={"Content-Type": "text/csv"},
+    )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"].lower()
+    assert f"ambiguous csv columns for {canonical}" in detail
