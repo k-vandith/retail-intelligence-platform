@@ -121,7 +121,7 @@ function renderKpis() {
   byId("session-count").textContent = formatNumber(state.frames.length, 0);
   byId("dataset-title").textContent = state.datasetTitle;
   byId("dataset-subtitle").textContent = state.source === "uploaded-aggregate-csv"
-    ? formatNumber(state.rowsRemoved, 0) + " rows excluded or replaced · aggregate CSV processed locally"
+    ? formatNumber(state.rowsRemoved, 0) + " rows excluded during cleaning · aggregate CSV processed locally"
     : "Reproducible synthetic signals · no camera or image input";
   byId("source-label").textContent = state.source === "uploaded-aggregate-csv" ? "Imported CSV" : "Synthetic demo";
   byId("active-session-title").textContent = state.datasetTitle;
