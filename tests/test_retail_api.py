@@ -77,6 +77,8 @@ def test_health_and_demo_session_are_valid() -> None:
     assert all(len(row) == 8 for row in payload["activity_grid"])
     assert all("entrance" in frame["zone_occupancy"] for frame in payload["frames"])
     assert payload["source"] == "synthetic-demo"
+    assert payload["shelves"]
+    assert len(payload["activity_grid"]) == 8
 
     invalid = request("GET", "/api/demo?frames=2")
     assert invalid.status_code == 422
@@ -194,3 +196,21 @@ def test_csv_analysis_rejects_distinct_aliases_for_same_field(header, row, canon
     assert response.status_code == 422
     detail = response.json()["detail"].lower()
     assert f"ambiguous csv columns for {canonical}" in detail
+
+
+
+def test_uploaded_aggregate_csv_does_not_receive_demo_inventory_or_floorplan_values() -> None:
+    csv = "frame,people_count,queue_length\n0,3,2\n1,5,4\n"
+    response = request(
+        "POST",
+        "/api/analyze/csv",
+        content=csv,
+        headers={"Content-Type": "text/csv"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["source"] == "uploaded-aggregate-csv"
+    assert payload["shelves"] == []
+    assert payload["activity_grid"] == []
+    assert any("No shelf inventory measurement" in item for item in payload["limitations"])
