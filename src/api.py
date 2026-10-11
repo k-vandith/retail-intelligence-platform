@@ -12,7 +12,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response
 
-from src.retail import run_demo_session
+from src.retail import SERVICE_RATE_PER_MIN, run_demo_session
 from src.retail_features import dwell_heatmap, queue_wait_estimate, shelf_occupancy
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -144,7 +144,19 @@ def _parse_csv(body: bytes) -> tuple[list[dict[str, Any]], int]:
     if not reader.fieldnames:
         raise HTTPException(status_code=422, detail="CSV is missing a header row")
 
-    normalized_headers = {_normalize_header(header): header for header in reader.fieldnames if header}
+    normalized_headers: dict[str, str] = {}
+    for header in reader.fieldnames:
+        if not header:
+            continue
+        normalized = _normalize_header(header)
+        if normalized in normalized_headers:
+            first = normalized_headers[normalized]
+            raise HTTPException(
+                status_code=422,
+                detail=f"Ambiguous duplicate CSV headers after normalization: {first!r} and {header!r}",
+            )
+        normalized_headers[normalized] = header
+
     aliases = {
         "frame": ("frame", "frame_id", "frame_index", "sample"),
         "people_count": ("people_count", "person_count", "persons", "shoppers", "shopper_count"),
@@ -196,7 +208,7 @@ def _parse_csv(body: bytes) -> tuple[list[dict[str, Any]], int]:
                 "exits": exits,
                 "zone_occupancy": zone_values,
                 "queue_length": queue,
-                "est_wait_sec": queue * 45.0,
+                "est_wait_sec": queue / SERVICE_RATE_PER_MIN * 60.0,
                 "alerts": [],
             }
         except (ValueError, TypeError, OverflowError):
