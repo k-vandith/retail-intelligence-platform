@@ -260,6 +260,14 @@ GitHub Actions runs the linter, JavaScript syntax check, Bandit, dependency audi
 - Bind to loopback for local use. The development API has no authentication and should not be exposed directly to the public internet.
 - Real deployments that connect cameras or third-party detectors need a separate privacy, consent, security, and jurisdictional review. The current web UI does not implement a live camera or video-ingestion path.
 
+## Production deployment security
+
+The default launcher binds to loopback. A non-loopback bind such as `python run.py --host 0.0.0.0 --port 8501` requires both `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD`, injected by the hosting platform's secret manager (never commit credentials). In this mode HTTP Basic authentication protects the UI, static files, documentation, and API endpoints.
+
+Use an HTTPS reverse proxy or equivalent TLS gateway for remote access. This is a single shared account, not SSO, per-user roles, or a complete audit trail; sensitive multi-user deployments need organization identity, rate limits, access logs, backups, retention controls, and a tested recovery process.
+
+The default counts and shelf levels are synthetic fixtures, not live store measurements. Before operational use, connect only an approved aggregate data source and validate counting, queue estimates, and inventory semantics against store ground truth. The app intentionally does not accept images/video or estimate shelf levels from cameras.
+
 ## License
 
 MIT. See LICENSE.
