@@ -252,3 +252,13 @@ def test_csv_analysis_rejects_duplicate_frame_identifiers_instead_of_picking_a_r
 
     assert response.status_code == 422
     assert "duplicate frame identifier 0" in response.json()["detail"].lower()
+
+
+
+def test_retail_client_report_does_not_invent_wait_times_for_uploaded_csv():
+    from pathlib import Path
+
+    script = (Path(__file__).resolve().parents[1] / "web" / "app.js").read_text(encoding="utf-8")
+    assert 'peak_wait_minutes: state.source === "synthetic-demo"' in script
+    assert 'estimated_wait_minutes: state.source === "synthetic-demo" ? Number(row.queue_length) / 1.5 : null' in script
+    assert "rows_excluded_during_cleaning: state.rowsRemoved" in script
