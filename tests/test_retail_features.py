@@ -13,7 +13,10 @@ from src.retail_features import (
 
 def test_retail(tmp_path):
     download_sample_video(tmp_path / "vid.txt")
-    assert "frame_counts" in detect_persons_yolo()
+    unavailable = detect_persons_yolo()
+    assert unavailable["backend"] == "unavailable"
+    assert unavailable["frame_counts"] == []
+    assert unavailable["total_detections"] is None
     assert queue_wait_estimate(10)["est_wait_minutes"] == 6.67
     assert shelf_occupancy({"sku1": 0.1})[0]["low_stock"] is True
     assert dwell_heatmap([1, 2, 3]).shape == (8, 8)
@@ -61,3 +64,21 @@ def test_shopper_count_series_rejects_negative_or_fractional_values():
         shopper_count_series([1, -1])
     with pytest.raises(ValueError, match="whole numbers"):
         shopper_count_series([1, 1.5])
+
+
+
+def test_detector_never_substitutes_sample_counts_when_no_input_is_provided():
+    result = detect_persons_yolo()
+
+    assert result["backend"] == "unavailable"
+    assert result["frame_counts"] == []
+    assert result["total_detections"] is None
+    assert "No measurements were generated" in result["error"]
+
+
+def test_detector_rejects_missing_media_without_fake_counts(tmp_path):
+    result = detect_persons_yolo(tmp_path / "missing.mp4")
+
+    assert result["backend"] == "unavailable"
+    assert result["frame_counts"] == []
+    assert result["total_detections"] is None

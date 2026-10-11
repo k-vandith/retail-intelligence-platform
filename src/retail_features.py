@@ -34,24 +34,39 @@ def download_sample_video(path: Path) -> Path:
 
 
 def detect_persons_yolo(source: Path | None = None) -> dict[str, Any]:
+    """Count persons only when a concrete input and the detector are available."""
+    if source is None:
+        return {
+            "backend": "unavailable",
+            "frame_counts": [],
+            "total_detections": None,
+            "error": "Provide a local image or video source. No measurements were generated.",
+        }
+    source = Path(source).expanduser()
+    if not source.is_file():
+        return {
+            "backend": "unavailable",
+            "frame_counts": [],
+            "total_detections": None,
+            "error": "The selected media file is not available. No measurements were generated.",
+        }
     try:
         from ultralytics import YOLO
 
         model = YOLO("yolov8n.pt")
-        results = model.predict(source=str(source) if source else "bus.jpg", verbose=False)
+        results = model.predict(source=str(source), verbose=False)
         counts = [
             sum(1 for category in result.boxes.cls.tolist() if int(category) == 0)
             if result.boxes is not None else 0
             for result in results
         ]
         return {"backend": "yolo", "frame_counts": counts, "total_detections": int(sum(counts))}
-    except Exception as exc:
-        counts = [2, 3, 4, 3, 5, 4, 3, 2, 2, 1]
+    except Exception:
         return {
-            "backend": "synthetic",
-            "frame_counts": counts,
-            "total_detections": int(sum(counts)),
-            "error": str(exc),
+            "backend": "unavailable",
+            "frame_counts": [],
+            "total_detections": None,
+            "error": "The detector could not complete inference. No synthetic measurements were substituted.",
         }
 
 

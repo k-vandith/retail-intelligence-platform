@@ -11,7 +11,7 @@ const PAGE_CONFIG = {
 
 const state = {
   frames: [],
-  source: "synthetic-demo",
+  source: "no-data",
   rowsRead: 0,
   rowsRemoved: 0,
   queueThreshold: 5,
@@ -21,7 +21,7 @@ const state = {
   activityGrid: [],
   shelves: [],
   busy: false,
-  datasetTitle: "Synthetic floor session",
+  datasetTitle: "No dataset loaded",
 };
 
 const byId = (id) => document.getElementById(id);
@@ -65,7 +65,13 @@ function setBusy(busy, message = "") {
   state.busy = busy;
   ["load-demo", "analyze-csv", "export-report", "export-inventory", "export-session-csv", "export-session-json"].forEach((id) => {
     const node = byId(id);
-    if (node) node.disabled = busy || (id === "analyze-csv" && !byId("csv-file").files?.[0]);
+    if (!node) return;
+    const noFrames = state.frames.length === 0;
+    const noShelves = state.shelves.length === 0;
+    node.disabled = busy
+      || (id === "analyze-csv" && !byId("csv-file").files?.[0])
+      || (["export-report", "export-session-csv", "export-session-json"].includes(id) && noFrames)
+      || (id === "export-inventory" && noShelves);
   });
   document.body.classList.toggle("is-busy", busy);
   if (message) toast(message);
@@ -82,7 +88,7 @@ function computeMetrics(frames) {
     peak_queue: queues.length ? Math.max(...queues) : 0,
     average_queue: queues.length ? queues.reduce((sum, value) => sum + value, 0) / queues.length : 0,
     queue_alert_count: queues.filter((value) => value >= state.queueThreshold).length,
-    peak_wait_minutes: (queues.length ? Math.max(...queues) : 0) / 1.5,
+    peak_wait_minutes: state.source === "synthetic-demo" ? (queues.length ? Math.max(...queues) : 0) / 1.5 : null,
   };
 }
 
@@ -108,12 +114,14 @@ function renderKpis() {
   byId("kpi-average-foot").textContent = formatNumber(metrics.total_entries, 0) + " entries · " + formatNumber(metrics.total_exits, 0) + " exits";
   byId("kpi-alerts").textContent = formatNumber(queueAlerts, 0);
   byId("kpi-alerts-foot").textContent = "Threshold: " + state.queueThreshold + " shoppers";
-  byId("kpi-low-shelves").textContent = formatNumber(lowShelves, 0);
-  byId("kpi-shelf-foot").textContent = "Trigger below " + Math.round(state.shelfThreshold * 100) + "% fill";
+  byId("kpi-low-shelves").textContent = state.shelves.length ? formatNumber(lowShelves, 0) : "—";
+  byId("kpi-shelf-foot").textContent = state.shelves.length
+    ? "Trigger below " + Math.round(state.shelfThreshold * 100) + "% fill"
+    : "No shelf measurements supplied";
   byId("session-count").textContent = formatNumber(state.frames.length, 0);
   byId("dataset-title").textContent = state.datasetTitle;
   byId("dataset-subtitle").textContent = state.source === "uploaded-aggregate-csv"
-    ? formatNumber(state.rowsRemoved, 0) + " rows excluded or replaced · aggregate CSV processed locally"
+    ? formatNumber(state.rowsRemoved, 0) + " rows excluded during cleaning · aggregate CSV processed locally"
     : "Reproducible synthetic signals · no camera or image input";
   byId("source-label").textContent = state.source === "uploaded-aggregate-csv" ? "Imported CSV" : "Synthetic demo";
   byId("active-session-title").textContent = state.datasetTitle;
@@ -233,7 +241,7 @@ function renderQueueReview() {
   byId("queue-threshold-out").textContent = threshold + " shoppers";
   byId("queue-peak").textContent = formatNumber(metrics.peak_queue, 0);
   byId("queue-average").textContent = formatNumber(metrics.average_queue, 1);
-  byId("queue-wait").textContent = formatNumber(metrics.peak_queue / 1.5, 1) + " min";
+  byId("queue-wait").textContent = state.source === "synthetic-demo" ? formatNumber(metrics.peak_queue / 1.5, 1) + " min · demo estimate" : "—";
   const chip = byId("queue-status-chip");
   chip.textContent = flagged.length ? flagged.length + " FLAGGED" : "NO BREACHES";
   chip.style.color = flagged.length ? "#f0c275" : "#9cceaa";
@@ -242,7 +250,7 @@ function renderQueueReview() {
     ? "<strong>" + flagged.length + " sampled frame(s) need queue review</strong><span>Trigger: queue length ≥ " + threshold + "</span>"
     : "<strong>No sampled frame crosses the threshold</strong><span>This applies to the current dataset only.</span>";
   byId("queue-table").innerHTML = flagged.length ? flagged.slice(0, 80).map((row) =>
-    '<tr><td>#' + formatNumber(row.frame, 0) + '</td><td>' + formatNumber(row.queue_length, 0) + '</td><td>' + formatNumber(Number(row.queue_length) / 1.5, 1) + ' min</td><td><span class="status-chip warning">Review queue</span></td></tr>'
+    '<tr><td>#' + formatNumber(row.frame, 0) + '</td><td>' + formatNumber(row.queue_length, 0) + '</td><td>' + (state.source === "synthetic-demo" ? formatNumber(Number(row.queue_length) / 1.5, 1) + ' min · demo' : '—') + '</td><td><span class="status-chip warning">Review queue</span></td></tr>'
   ).join("") : '<tr><td colspan="4">No frames meet the configured threshold. Lower the threshold or load another session to explore queue flags.</td></tr>';
   byId("queue-foot").textContent = flagged.length > 80 ? "Showing 80 of " + flagged.length + " flagged frames." : flagged.length + " flagged frame(s) · estimated wait assumes a fixed 1.5 shoppers/minute service rate.";
 }
@@ -260,9 +268,13 @@ function renderInventory() {
     const fill = Math.max(0, Math.min(100, Number(row.occupancy) * 100));
     const alert = Number(row.occupancy) < threshold;
     return '<tr><td>' + escapeHTML(row.sku) + '</td><td><div class="fill-cell"><span class="fill-track"><span style="width:' + fill.toFixed(1) + '%"></span></span><b>' + Math.round(fill) + '%</b></div></td><td><span class="status-chip ' + (alert ? "warning" : "neutral") + '">' + (alert ? "Low shelf" : "In range") + '</span></td><td>' + (alert ? "Restock" : "Monitor") + "</td></tr>";
-  }).join("") : '<tr><td colspan="4">The sample inventory fixture is unavailable.</td></tr>';
-  byId("kpi-low-shelves").textContent = formatNumber(low.length, 0);
-  byId("kpi-shelf-foot").textContent = "Trigger below " + Math.round(threshold * 100) + "% fill";
+  }).join("") : '<tr><td colspan="4">' + (state.source === "synthetic-demo"
+    ? "The sample inventory fixture is unavailable."
+    : "No shelf inventory data was provided by this aggregate CSV.") + "</td></tr>";
+  byId("kpi-low-shelves").textContent = shelves.length ? formatNumber(low.length, 0) : "—";
+  byId("kpi-shelf-foot").textContent = shelves.length
+    ? "Trigger below " + Math.round(threshold * 100) + "% fill"
+    : "No shelf measurements supplied";
 }
 
 function csvCell(value) {
@@ -324,14 +336,14 @@ function buildReport() {
     source: state.source,
     frame_count: state.frames.length,
     rows_read: state.rowsRead,
-    rows_removed_or_replaced: state.rowsRemoved,
+    rows_excluded_during_cleaning: state.rowsRemoved,
     queue_threshold: state.queueThreshold,
     shelf_low_threshold_percent: Math.round(state.shelfThreshold * 100),
     metrics: metrics,
     queue_flags: state.frames.filter((row) => Number(row.queue_length) >= state.queueThreshold).map((row) => ({
       frame: row.frame,
       queue_length: row.queue_length,
-      estimated_wait_minutes: Number(row.queue_length) / 1.5,
+      estimated_wait_minutes: state.source === "synthetic-demo" ? Number(row.queue_length) / 1.5 : null,
     })),
     inventory_fixture: state.shelves.map((shelf) => ({
       sku: shelf.sku,
@@ -355,6 +367,7 @@ function exportReport() {
 }
 
 function exportInventoryCSV() {
+  if (!state.shelves.length) return toast("No shelf inventory measurements are available for this dataset.", "error");
   const rows = state.shelves.map((shelf) => ({
     sku: shelf.sku,
     shelf_fill_percent: Math.round(Number(shelf.occupancy) * 100),
@@ -435,7 +448,14 @@ async function boot() {
   try {
     const health = await fetchJSON("/api/health");
     byId("api-status").textContent = "Local engine connected";
-    await loadDemo();
+    // Wait for the operator to upload measurements or explicitly choose the demo.
+    byId("dataset-title").textContent = "No dataset loaded";
+    byId("dataset-subtitle").textContent = "Upload aggregate CSV data or click Load demo for fictional sample values.";
+    byId("session-count").textContent = "0";
+    byId("export-report").disabled = true;
+    byId("export-session-csv").disabled = true;
+    byId("export-session-json").disabled = true;
+    byId("export-inventory").disabled = true;
     if (health.status !== "ok") byId("api-status").textContent = "Engine response received";
   } catch (error) {
     byId("api-status").textContent = "Local engine unavailable";

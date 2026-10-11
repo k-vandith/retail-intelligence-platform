@@ -77,6 +77,8 @@ def test_health_and_demo_session_are_valid() -> None:
     assert all(len(row) == 8 for row in payload["activity_grid"])
     assert all("entrance" in frame["zone_occupancy"] for frame in payload["frames"])
     assert payload["source"] == "synthetic-demo"
+    assert payload["shelves"]
+    assert len(payload["activity_grid"]) == 8
 
     invalid = request("GET", "/api/demo?frames=2")
     assert invalid.status_code == 422
@@ -97,7 +99,7 @@ def test_csv_analysis_normalizes_aliases_skips_invalid_and_deduplicates() -> Non
         "frame_index,shoppers,queue,entry_count,exit_count,entrance_count,aisle_count,checkout_count\n"
         "0,3,1,1,0,1,2,0\n"
         "1,5,6,2,0,2,3,0\n"
-        "1,7,6,1,1,3,3,1\n"
+        "2,7,3,1,1,3,3,1\n"
         "not-a-frame,8,2,0,0,2,4,2\n"
         "3,not-a-count,2,0,0,1,1,0\n"
     )
@@ -111,14 +113,14 @@ def test_csv_analysis_normalizes_aliases_skips_invalid_and_deduplicates() -> Non
     payload = response.json()
     assert payload["source"] == "uploaded-aggregate-csv"
     assert payload["rows_read"] == 5
-    assert payload["rows_removed"] == 3
-    assert payload["frame_count"] == 2
+    assert payload["rows_removed"] == 2
+    assert payload["frame_count"] == 3
     row_one = next(row for row in payload["frames"] if row["frame"] == 1)
-    assert row_one["people_count"] == 7
+    assert row_one["people_count"] == 5
     assert row_one["queue_length"] == 6
-    assert row_one["zone_occupancy"]["entrance"] == 3
+    assert row_one["zone_occupancy"]["entrance"] == 2
     assert payload["metrics"]["queue_alert_count"] == 1
-    assert payload["zones"][0]["sampled_frames"] == 2
+    assert payload["zones"][0]["sampled_frames"] == 3
 
 
 @pytest.mark.parametrize(
@@ -161,7 +163,7 @@ def test_api_queue_wait_matches_the_documented_service_rate() -> None:
         assert frame["est_wait_sec"] == pytest.approx(frame["queue_length"] / 1.5 * 60)
 
 
-def test_uploaded_queue_wait_uses_same_service_rate_as_demo() -> None:
+def test_uploaded_queue_wait_is_unavailable_without_measured_service_rate() -> None:
     csv = "frame,people_count,queue_length\n0,3,3\n"
     response = request(
         "POST",
@@ -171,7 +173,10 @@ def test_uploaded_queue_wait_uses_same_service_rate_as_demo() -> None:
     )
 
     assert response.status_code == 200
-    assert response.json()["frames"][0]["est_wait_sec"] == pytest.approx(120)
+    assert response.json()["frames"][0]["est_wait_sec"] is None
+    assert response.json()["metrics"]["peak_wait_minutes"] is None
+    assert response.json()["metrics"]["peak_wait_alert"] is None
+    assert any("no measured service rate" in item for item in response.json()["limitations"])
 
 
 
@@ -194,3 +199,86 @@ def test_csv_analysis_rejects_distinct_aliases_for_same_field(header, row, canon
     assert response.status_code == 422
     detail = response.json()["detail"].lower()
     assert f"ambiguous csv columns for {canonical}" in detail
+
+
+
+def test_uploaded_aggregate_csv_does_not_receive_demo_inventory_or_floorplan_values() -> None:
+    csv = "frame,people_count,queue_length\n0,3,2\n1,5,4\n"
+    response = request(
+        "POST",
+        "/api/analyze/csv",
+        content=csv,
+        headers={"Content-Type": "text/csv"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["source"] == "uploaded-aggregate-csv"
+    assert payload["shelves"] == []
+    assert payload["activity_grid"] == []
+    assert any("No shelf inventory measurement" in item for item in payload["limitations"])
+
+
+
+def test_retail_ui_does_not_load_synthetic_demo_automatically():
+    root = Path(__file__).resolve().parents[1]
+    script = (root / "web" / "app.js").read_text(encoding="utf-8")
+    boot = script[script.index("async function boot()"):script.index('byId("load-demo").addEventListener')]
+    assert "await loadDemo()" not in boot
+    assert 'byId("load-demo").addEventListener("click", loadDemo)' in script
+    assert 'source: "no-data"' in script
+
+
+
+def test_imported_session_ui_does_not_present_missing_shelf_data_as_zero():
+    from pathlib import Path
+
+    script = (Path(__file__).resolve().parents[1] / "web" / "app.js").read_text(encoding="utf-8")
+    assert 'state.shelves.length ? formatNumber(lowShelves, 0) : "—"' in script
+    assert 'shelves.length ? formatNumber(low.length, 0) : "—"' in script
+    assert 'if (!state.shelves.length) return toast("No shelf inventory measurements are available for this dataset.", "error");' in script
+    assert '|| (id === "export-inventory" && noShelves)' in script
+
+
+
+def test_csv_analysis_rejects_duplicate_frame_identifiers_instead_of_picking_a_row():
+    csv = "frame,people_count,queue_length\n0,3,1\n0,12,7\n"
+    response = request(
+        "POST",
+        "/api/analyze/csv",
+        content=csv,
+        headers={"Content-Type": "text/csv"},
+    )
+
+    assert response.status_code == 422
+    assert "duplicate frame identifier 0" in response.json()["detail"].lower()
+
+
+
+def test_retail_client_report_does_not_invent_wait_times_for_uploaded_csv():
+    from pathlib import Path
+
+    script = (Path(__file__).resolve().parents[1] / "web" / "app.js").read_text(encoding="utf-8")
+    assert 'peak_wait_minutes: state.source === "synthetic-demo"' in script
+    assert 'estimated_wait_minutes: state.source === "synthetic-demo" ? Number(row.queue_length) / 1.5 : null' in script
+    assert "rows_excluded_during_cleaning: state.rowsRemoved" in script
+
+
+
+@pytest.mark.parametrize(
+    "content, expected",
+    [
+        ("frame,people_count,queue_length\n0,3,2,extra\n", "more values than the header"),
+        (",people_count,queue_length\n0,3,2\n", "empty column name"),
+    ],
+)
+def test_csv_rejects_malformed_columns_instead_of_returning_partial_metrics(content, expected):
+    response = request(
+        "POST",
+        "/api/analyze/csv",
+        content=content,
+        headers={"Content-Type": "text/csv"},
+    )
+
+    assert response.status_code == 422
+    assert expected in response.json()["detail"]
