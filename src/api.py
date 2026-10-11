@@ -147,7 +147,10 @@ def _payload(
     # measurements derived from this aggregate CSV. Never mix them into uploads.
     shelves = shelf_occupancy(SHELF_FIXTURE, threshold=0.25) if is_demo else []
     grid = dwell_heatmap(shoppers, grid=8) if is_demo else None
-    queue_wait = queue_wait_estimate(peak_queue)
+    queue_wait = queue_wait_estimate(peak_queue) if is_demo else None
+    if not is_demo:
+        for frame in frames:
+            frame["est_wait_sec"] = None
 
     # Alert summaries are recalculated using the selected threshold instead of
     # trusting the threshold baked into a prior client-side view.
@@ -172,8 +175,8 @@ def _payload(
             "peak_queue": peak_queue,
             "average_queue": round(mean(queues), 2),
             "queue_alert_count": sum(queue >= queue_threshold for queue in queues),
-            "peak_wait_minutes": queue_wait["est_wait_minutes"],
-            "peak_wait_alert": queue_wait["alert"],
+            "peak_wait_minutes": queue_wait["est_wait_minutes"] if queue_wait is not None else None,
+            "peak_wait_alert": queue_wait["alert"] if queue_wait is not None else None,
         },
         "zones": _zone_summary(frames),
         "activity_grid": [[round(float(cell), 3) for cell in row] for row in grid.tolist()] if grid is not None else [],
@@ -189,7 +192,7 @@ def _payload(
             ]
             if is_demo
             else [
-                "Queue wait is a heuristic assuming 1.5 shoppers served per minute; validate this rate for the store.",
+                "Queue wait is unavailable because the uploaded CSV contains no measured service rate; configure one before estimating wait time.",
                 "No shelf inventory measurement is supplied by this aggregate CSV; shelf checks are unavailable.",
                 "No floorplan coordinates or dwell-time observations were supplied; the activity projection is unavailable.",
                 "Only aggregate numeric CSV data is accepted; this interface does not accept or store images or video.",
