@@ -169,10 +169,15 @@ def _parse_csv(body: bytes) -> tuple[list[dict[str, Any]], int]:
     }
     resolved: dict[str, str] = {}
     for canonical, candidates in aliases.items():
-        for candidate in candidates:
-            if candidate in normalized_headers:
-                resolved[canonical] = normalized_headers[candidate]
-                break
+        matched = [candidate for candidate in candidates if candidate in normalized_headers]
+        if len(matched) > 1:
+            columns = ", ".join(repr(normalized_headers[candidate]) for candidate in matched)
+            raise HTTPException(
+                status_code=422,
+                detail=f"Ambiguous CSV columns for {canonical}: {columns}",
+            )
+        if matched:
+            resolved[canonical] = normalized_headers[matched[0]]
     missing = [name for name in ("frame", "people_count", "queue_length") if name not in resolved]
     if missing:
         raise HTTPException(
