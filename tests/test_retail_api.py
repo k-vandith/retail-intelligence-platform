@@ -217,3 +217,13 @@ def test_uploaded_aggregate_csv_does_not_receive_demo_inventory_or_floorplan_val
     assert payload["shelves"] == []
     assert payload["activity_grid"] == []
     assert any("No shelf inventory measurement" in item for item in payload["limitations"])
+
+
+
+def test_retail_ui_does_not_load_synthetic_demo_automatically():
+    root = Path(__file__).resolve().parents[1]
+    script = (root / "web" / "app.js").read_text(encoding="utf-8")
+    boot = script[script.index("async function boot()"):script.index('byId("load-demo").addEventListener')]
+    assert "await loadDemo()" not in boot
+    assert 'byId("load-demo").addEventListener("click", loadDemo)' in script
+    assert 'source: "no-data"' in script
