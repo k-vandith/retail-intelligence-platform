@@ -65,7 +65,13 @@ function setBusy(busy, message = "") {
   state.busy = busy;
   ["load-demo", "analyze-csv", "export-report", "export-inventory", "export-session-csv", "export-session-json"].forEach((id) => {
     const node = byId(id);
-    if (node) node.disabled = busy || (id === "analyze-csv" && !byId("csv-file").files?.[0]);
+    if (!node) return;
+    const noFrames = state.frames.length === 0;
+    const noShelves = state.shelves.length === 0;
+    node.disabled = busy
+      || (id === "analyze-csv" && !byId("csv-file").files?.[0])
+      || (["export-report", "export-session-csv", "export-session-json"].includes(id) && noFrames)
+      || (id === "export-inventory" && noShelves);
   });
   document.body.classList.toggle("is-busy", busy);
   if (message) toast(message);
@@ -108,8 +114,10 @@ function renderKpis() {
   byId("kpi-average-foot").textContent = formatNumber(metrics.total_entries, 0) + " entries · " + formatNumber(metrics.total_exits, 0) + " exits";
   byId("kpi-alerts").textContent = formatNumber(queueAlerts, 0);
   byId("kpi-alerts-foot").textContent = "Threshold: " + state.queueThreshold + " shoppers";
-  byId("kpi-low-shelves").textContent = formatNumber(lowShelves, 0);
-  byId("kpi-shelf-foot").textContent = "Trigger below " + Math.round(state.shelfThreshold * 100) + "% fill";
+  byId("kpi-low-shelves").textContent = state.shelves.length ? formatNumber(lowShelves, 0) : "—";
+  byId("kpi-shelf-foot").textContent = state.shelves.length
+    ? "Trigger below " + Math.round(state.shelfThreshold * 100) + "% fill"
+    : "No shelf measurements supplied";
   byId("session-count").textContent = formatNumber(state.frames.length, 0);
   byId("dataset-title").textContent = state.datasetTitle;
   byId("dataset-subtitle").textContent = state.source === "uploaded-aggregate-csv"
@@ -263,8 +271,10 @@ function renderInventory() {
   }).join("") : '<tr><td colspan="4">' + (state.source === "synthetic-demo"
     ? "The sample inventory fixture is unavailable."
     : "No shelf inventory data was provided by this aggregate CSV.") + "</td></tr>";
-  byId("kpi-low-shelves").textContent = formatNumber(low.length, 0);
-  byId("kpi-shelf-foot").textContent = "Trigger below " + Math.round(threshold * 100) + "% fill";
+  byId("kpi-low-shelves").textContent = shelves.length ? formatNumber(low.length, 0) : "—";
+  byId("kpi-shelf-foot").textContent = shelves.length
+    ? "Trigger below " + Math.round(threshold * 100) + "% fill"
+    : "No shelf measurements supplied";
 }
 
 function csvCell(value) {
@@ -357,6 +367,7 @@ function exportReport() {
 }
 
 function exportInventoryCSV() {
+  if (!state.shelves.length) return toast("No shelf inventory measurements are available for this dataset.", "error");
   const rows = state.shelves.map((shelf) => ({
     sku: shelf.sku,
     shelf_fill_percent: Math.round(Number(shelf.occupancy) * 100),
