@@ -99,7 +99,7 @@ def test_csv_analysis_normalizes_aliases_skips_invalid_and_deduplicates() -> Non
         "frame_index,shoppers,queue,entry_count,exit_count,entrance_count,aisle_count,checkout_count\n"
         "0,3,1,1,0,1,2,0\n"
         "1,5,6,2,0,2,3,0\n"
-        "1,7,6,1,1,3,3,1\n"
+        "2,7,3,1,1,3,3,1\n"
         "not-a-frame,8,2,0,0,2,4,2\n"
         "3,not-a-count,2,0,0,1,1,0\n"
     )
@@ -113,14 +113,14 @@ def test_csv_analysis_normalizes_aliases_skips_invalid_and_deduplicates() -> Non
     payload = response.json()
     assert payload["source"] == "uploaded-aggregate-csv"
     assert payload["rows_read"] == 5
-    assert payload["rows_removed"] == 3
-    assert payload["frame_count"] == 2
+    assert payload["rows_removed"] == 2
+    assert payload["frame_count"] == 3
     row_one = next(row for row in payload["frames"] if row["frame"] == 1)
-    assert row_one["people_count"] == 7
+    assert row_one["people_count"] == 5
     assert row_one["queue_length"] == 6
-    assert row_one["zone_occupancy"]["entrance"] == 3
+    assert row_one["zone_occupancy"]["entrance"] == 2
     assert payload["metrics"]["queue_alert_count"] == 1
-    assert payload["zones"][0]["sampled_frames"] == 2
+    assert payload["zones"][0]["sampled_frames"] == 3
 
 
 @pytest.mark.parametrize(
@@ -238,3 +238,17 @@ def test_imported_session_ui_does_not_present_missing_shelf_data_as_zero():
     assert 'state.shelves.length ? formatNumber(low.length, 0) : "—"' in script
     assert 'if (!state.shelves.length) return toast("No shelf inventory measurements are available for this dataset.", "error");' in script
     assert '|| (id === "export-inventory" && noShelves)' in script
+
+
+
+def test_csv_analysis_rejects_duplicate_frame_identifiers_instead_of_picking_a_row():
+    csv = "frame,people_count,queue_length\n0,3,1\n0,12,7\n"
+    response = request(
+        "POST",
+        "/api/analyze/csv",
+        content=csv,
+        headers={"Content-Type": "text/csv"},
+    )
+
+    assert response.status_code == 422
+    assert "duplicate frame identifier 0" in response.json()["detail"].lower()
