@@ -441,7 +441,6 @@ async function boot() {
     byId("dataset-title").textContent = "No dataset loaded";
     byId("dataset-subtitle").textContent = "Upload aggregate CSV data or click Load demo for fictional sample values.";
     byId("session-count").textContent = "0";
-    byId("source-badge").textContent = "No data loaded";
     byId("export-report").disabled = true;
     byId("export-session-csv").disabled = true;
     byId("export-session-json").disabled = true;
